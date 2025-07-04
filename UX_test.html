@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Indicator Buttons</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #f8f8f8;
+      margin: 0;
+    }
+    .container {
+      display: flex;
+      gap: 80px;
+    }
+    .unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .indicator {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: 1px solid #999;
+      margin-bottom: 40px;
+      background-color: white;
+      transition: background-color 0.2s;
+    }
+    .indicator.active {
+      background-color: #90ee90;
+    }
+    .press-button {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background-color: #ddd;
+      border: 1px solid #aaa;
+      margin-bottom: 30px;
+      cursor: pointer;
+      font-size: 16px;
+      color: #333;
+      transition: background-color 0.2s;
+    }
+    .press-button:active {
+      background-color: #ccc;
+    }
+    .time-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .arrow {
+      cursor: pointer;
+      font-size: 20px;
+      user-select: none;
+      color: #555;
+    }
+    .time-display {
+      width: 40px;
+      text-align: center;
+      font-size: 14px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="container"></div>
+
+  <script>
+    const container = document.getElementById("container");
+    const UNITS = 4;
+    const MIN_TIME = 0.5;
+    const MAX_TIME = 5.0;
+    const STEP = 0.5;
+    const KEY_BINDINGS = ['1', '2', '3', '4'];
+
+    const states = Array.from({ length: UNITS }, (_, i) => ({
+      id: i,
+      time: i + 1,
+      active: false,
+      holdStart: null,
+      timeoutId: null,
+      button: null,
+      indicator: null
+    }));
+
+    states.forEach((state, index) => {
+      const unit = document.createElement("div");
+      unit.className = "unit";
+
+      const indicator = document.createElement("div");
+      indicator.className = "indicator";
+      state.indicator = indicator;
+
+      const button = document.createElement("button");
+      button.className = "press-button";
+      button.textContent = KEY_BINDINGS[index];
+      state.button = button;
+
+      const controls = document.createElement("div");
+      controls.className = "time-controls";
+
+      const left = document.createElement("span");
+      left.className = "arrow";
+      left.textContent = "<";
+
+      const timeDisplay = document.createElement("span");
+      timeDisplay.className = "time-display";
+      timeDisplay.textContent = `${state.time}s`;
+
+      const right = document.createElement("span");
+      right.className = "arrow";
+      right.textContent = ">";
+
+      left.onclick = () => {
+        if (state.time > MIN_TIME) {
+          state.time -= STEP;
+          timeDisplay.textContent = `${state.time}s`;
+        }
+      };
+
+      right.onclick = () => {
+        if (state.time < MAX_TIME) {
+          state.time += STEP;
+          timeDisplay.textContent = `${state.time}s`;
+        }
+      };
+
+      const startHold = () => {
+        state.holdStart = Date.now();
+        state.timeoutId = setTimeout(() => {
+          state.active = !state.active;
+          indicator.classList.toggle("active", state.active);
+        }, state.time * 1000);
+      };
+
+      const cancelHold = () => {
+        clearTimeout(state.timeoutId);
+        state.timeoutId = null;
+      };
+
+      button.onmousedown = startHold;
+      button.onmouseup = button.onmouseleave = cancelHold;
+
+      controls.appendChild(left);
+      controls.appendChild(timeDisplay);
+      controls.appendChild(right);
+
+      unit.appendChild(indicator);
+      unit.appendChild(button);
+      unit.appendChild(controls);
+
+      container.appendChild(unit);
+    });
+
+    document.addEventListener("keydown", (e) => {
+      const index = KEY_BINDINGS.indexOf(e.key);
+      if (index !== -1 && !states[index].timeoutId) {
+        const state = states[index];
+        state.holdStart = Date.now();
+        state.timeoutId = setTimeout(() => {
+          state.active = !state.active;
+          state.indicator.classList.toggle("active", state.active);
+        }, state.time * 1000);
+      }
+    });
+
+    document.addEventListener("keyup", (e) => {
+      const index = KEY_BINDINGS.indexOf(e.key);
+      if (index !== -1) {
+        const state = states[index];
+        clearTimeout(state.timeoutId);
+        state.timeoutId = null;
+      }
+    });
+  </script>
+</body>
+</html>
